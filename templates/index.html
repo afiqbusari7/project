@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Job Scraper</title>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+    <style>
+      body,
+      html {
+        height: 100%;
+      }
+
+      .table-wrapper {
+        overflow-x: scroll;
+        height: 60vh;
+        max-height: 60vh;
+      }
+
+      #dataTable {
+        font-size: 12px;
+        table-layout: fixed;
+        word-wrap: break-word;
+      }
+
+      th,
+      td {
+        height: 32px;
+        max-height: 32px;
+        padding: 2px 4px;
+        line-height: 1.5;
+        overflow: hidden;
+        text-align: left;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      body {
+        font-family: "Roboto", sans-serif;
+      }
+
+      .container {
+        max-width: 1200px;
+      }
+
+      .btn {
+        border-radius: 0;
+      }
+
+      .section-title {
+        margin-top: 3rem;
+        font-weight: 700;
+      }
+
+      .section-divider {
+        background-color: #22314d;
+        width: 60px;
+        height: 2px;
+        margin: 20px auto;
+      }
+
+      .statistics-section {
+        border: 1px solid #ccc;
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+      }
+      .statistics-section pre {
+        white-space: pre-wrap;
+        word-break: keep-all;
+      }
+      .job-title-example {
+        max-width: 300px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+      }
+      .full-text {
+        white-space: normal;
+      }
+      .modal {
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4);
+        display: none;
+      }
+
+      .modal.show {
+        display: block;
+      }
+
+      .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 20px;
+        width: 80%;
+      }
+    </style>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="
+    https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.2.0/build/index.umd.min.js
+    "></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="section-title">Job Scraper</h1>
+      <div class="section-divider"></div>
+
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a
+            id="scrape-tab"
+            class="nav-link active"
+            data-toggle="tab"
+            href="#scrape"
+            >Scrape Data</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            id="consolidate-tab"
+            class="nav-link"
+            data-toggle="tab"
+            href="#consolidate"
+            >Consolidate Data</a
+          >
+        </li>
+        <li class="nav-item">
+          <a id="display-tab" class="nav-link" data-toggle="tab" href="#display"
+            >Display Data</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            id="statsTrend-tab"
+            class="nav-link"
+            data-toggle="tab"
+            href="#statsTrend"
+            >Statistics and Trends</a
+          >
+        </li>
+      </ul>
+
+      <div class="tab-content">
+        <!-- Scrape Data tab -->
+        <div class="tab-pane container active" id="scrape">
+          <h2 class="section-title">Scrape Data</h2>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="scrapeData('careergov')">
+              Scrape careergov
+            </button>
+            <button class="btn btn-primary" onclick="scrapeData('indeed')">
+              Scrape indeed
+            </button>
+            <button class="btn btn-primary" onclick="scrapeData('naukri')">
+              Scrape naukri
+            </button>
+          </div>
+        </div>
+
+        <!-- Consolidate Data tab -->
+        <div class="tab-pane container fade" id="consolidate">
+          <h2 class="section-title">Consolidate Data</h2>
+          <button class="btn btn-primary" onclick="consolidateData()">
+            Consolidate all scraped data
+          </button>
+        </div>
+
+        <!-- Display Data tab -->
+        <div class="tab-pane container fade" id="display">
+          <h2 class="section-title">Display Data</h2>
+          <button class="btn btn-primary" onclick="displayData('all')">
+            Display all data
+          </button>
+          <div class="table-wrapper">
+            <table class="table table-bordered" id="dataTable">
+              <thead>
+                <tr>
+                  <th>Job Title</th>
+                  <th>Company</th>
+                  <th>Experience Level</th>
+                  <th>Job Type</th>
+                  <th>Location</th>
+                  <th>Job Description</th>
+                  <th>Technologies</th>
+                  <th>Salary</th>
+                </tr>
+              </thead>
+              <tbody id="dataBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Statistics and Trends tab -->
+        <div class="tab-pane container fade" id="statsTrend">
+          <h2 class="section-title">Statistics and Trends</h2>
+          <button id="displayStatisticsBtn" class="btn btn-primary mb-3">
+            Display statistics
+          </button>
+          <i
+            id="loadingSpinner"
+            class="fas fa-spinner fa-spin fa-2x text-primary"
+            hidden
+          ></i>
+          <div class="statistics-section" id="statisticsSection">
+            <ul class="nav nav-tabs nav-justified" id="statsTrendSubTabs">
+              <li class="nav-item">
+                <a
+                  class="nav-link active"
+                  id="jobCategories-tab"
+                  data-toggle="tab"
+                  href="#jobCategories"
+                  >Job Categories</a
+                >
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link"
+                  id="salaryByCluster-tab"
+                  data-toggle="tab"
+                  href="#salaryByCluster"
+                  >Salary by Cluster</a
+                >
+              </li>
+            </ul>
+
+            <!-- Secondary tab content -->
+            <div class="tab-content">
+              <!-- Job Categories tab -->
+              <div class="tab-pane container active" id="jobCategories">
+                <canvas id="clusterStatsChart"></canvas>
+              </div>
+              <!-- Salary by Cluster tab -->
+              <div class="tab-pane container fade" id="salaryByCluster">
+                <canvas id="combinedSalaryByClusterChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Cluster details table -->
+            <table class="table table-bordered mt-4">
+              <thead>
+                <tr>
+                  <th>Cluster</th>
+                  <th>Experience Level Mode</th>
+                  <th>Job Type Mode</th>
+                  <th>Top Technologies</th>
+                  <th>Job Titles Example</th>
+                </tr>
+              </thead>
+              <tbody id="clusterDetailsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <br />
+
+        <div id="feedback" class="alert d-none my-3"></div>
+      </div>
+
+      <div id="feedback" class="alert d-none my-3"></div>
+    </div>
+
+    <!-- The Modal -->
+    <div class="modal" tabindex="-1" id="myModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <!-- Modal Header -->
+          <div class="modal-header">
+            <h4 class="modal-title" id="modalTitle"></h4>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              onclick="closeModal()"
+            >
+              &times;
+            </button>
+          </div>
+
+          <!-- Modal body -->
+          <div class="modal-body full-text" id="modalBody"></div>
+
+          <!-- Modal footer -->
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-danger"
+              data-dismiss="modal"
+              onclick="closeModal()"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function displayTable(data) {
+        const tbody = document.getElementById("dataBody");
+        tbody.innerHTML = "";
+        data.forEach((record) => {
+          const tr = document.createElement("tr");
+          const columnOrder = [
+            "Job Title",
+            "Company",
+            "Experience Level",
+            "Job Type",
+            "Location",
+            "Job Description",
+            "Technologies",
+            "Salary",
+          ];
+
+          columnOrder.forEach((column) => {
+            const td = document.createElement("td");
+
+            let value;
+            if (column === "Technologies") {
+              value = record[column] ? record[column].join(", ") : "-";
+            } else {
+              value = record[column] ? record[column] : "-";
+            }
+
+            td.innerHTML = value;
+            tr.appendChild(td);
+
+            // Add click event listener to show modal with full content
+            td.addEventListener("click", (e) => {
+              const modal = document.getElementById("myModal");
+              const modalTitle = document.getElementById("modalTitle");
+              const modalBody = document.getElementById("modalBody");
+
+              modalTitle.innerText = `${column}`;
+              modalBody.innerText = e.target.innerText;
+              modal.classList.add("show");
+            });
+          });
+
+          tbody.appendChild(tr);
+        });
+      }
+
+      function scrapeData(source) {
+        const apiPath = "/scrape/" + source;
+        fetch(apiPath)
+          .then((response) => response.json())
+          .then((data) => {
+            alert(data.message);
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+      }
+
+      function displayData(source) {
+        let apiPath;
+        if (source === "all") {
+          apiPath = "/display/all";
+        } else {
+          apiPath = `/display/${source}`;
+        }
+        fetch(apiPath)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            displayTable(data);
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+      }
+
+      function consolidateData() {
+        const apiPath = "/consolidate";
+        fetch(apiPath)
+          .then((response) => response.json())
+          .then((data) => {
+            alert(data.message);
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+      }
+
+      function displayStatistics() {
+        const apiPath = "/graph/statistics";
+
+        // Show loading spinner
+        const loadingSpinner = document.getElementById("loadingSpinner");
+        loadingSpinner.hidden = false;
+
+        fetch(apiPath)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Log the data for debugging purposes
+            console.log("Data received from /graph/statistics:", data);
+
+            // Hide loading spinner
+            loadingSpinner.hidden = true;
+
+            // Display cluster statistics in a bar chart
+            const clusterStatsChart =
+              document.getElementById("clusterStatsChart");
+            const combinedSalaryByClusterChart = document.getElementById(
+              "combinedSalaryByClusterChart"
+            );
+
+            const labels = Object.keys(data.job_categories_stats);
+            const clustersData = Object.values(data.job_categories_stats);
+
+            const stats = data.cluster_salary_stats;
+
+            createBarChart(
+              clusterStatsChart,
+              labels,
+              clustersData,
+              "Job Categories"
+            );
+            createCombinedChart(
+              combinedSalaryByClusterChart,
+              stats,
+              "Combined Salary by Cluster"
+            );
+
+            // Display cluster details in a table
+            displayClusterDetails(data.cluster_stats_extended);
+          })
+          .catch((err) => {
+            // Hide loading spinner
+            loadingSpinner.hidden = true;
+            console.error(err);
+          });
+      }
+
+      function createBarChart(chartElem, labels, data, title) {
+        new Chart(chartElem, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: title,
+                data: data,
+                backgroundColor: "#22314d",
+              },
+            ],
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+          },
+        });
+      }
+
+      function createCombinedChart(chartElem, stats, title) {
+        const data = {
+          labels: stats.map((s) => `Cluster ${s.Cluster}`),
+          datasets: [
+            {
+              label: "Salary",
+              data: stats.map((s) => {
+                return {
+                  min: s.min,
+                  q1: s["25_percentile"],
+                  median: s.median,
+                  q3: s["75_percentile"],
+                  max: s.max,
+                };
+              }),
+              backgroundColor: "rgba(75, 192, 192, 0.5)",
+              borderColor: "rgba(75, 192, 192, 1)",
+              borderWidth: 1,
+              outlierColor: "#999999",
+              itemRadius: 0, // hide data points
+              hitRadius: 5, // extend the click area
+            },
+          ],
+        };
+
+        new Chart(chartElem, {
+          type: "boxplot",
+          data: data,
+          options: {
+            responsive: true,
+            plugins: {
+              title: {
+                display: true,
+                text: title,
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    const dataset = data.datasets[context.datasetIndex];
+                    const rowData = dataset.data[context.dataIndex];
+                    const label =
+                      dataset.label +
+                      " Stats " +
+                      data.labels[context.dataIndex] +
+                      ": ";
+
+                    const values = [
+                      "Min: " + rowData.min,
+                      "Q1: " + rowData.q1,
+                      "Median: " + rowData.median,
+                      "Q3: " + rowData.q3,
+                      "Max: " + rowData.max,
+                    ];
+
+                    return label + values.join(", ");
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                display: true,
+              },
+              y: {
+                display: true,
+              },
+            },
+          },
+        });
+      }
+
+      function displayClusterDetails(clusterStatsExtended) {
+        const tbody = document.getElementById("clusterDetailsBody");
+        tbody.innerHTML = "";
+
+        console.log(clusterStatsExtended);
+
+        clusterStatsExtended.forEach((record, index) => {
+          const tr = document.createElement("tr");
+          const tdCluster = document.createElement("td");
+          tdCluster.innerHTML = `Cluster ${index}`;
+          tr.appendChild(tdCluster);
+
+          const tdExpMode = document.createElement("td");
+          tdExpMode.innerHTML = record["Experience Level Mode"]
+            ? record["Experience Level Mode"]
+            : "-";
+          tr.appendChild(tdExpMode);
+
+          const tdJobTypeMode = document.createElement("td");
+          tdJobTypeMode.innerHTML = record["Job Type Mode"]
+            ? record["Job Type Mode"]
+            : "-";
+          tr.appendChild(tdJobTypeMode);
+
+          const tdTopTechnologies = document.createElement("td");
+          tdTopTechnologies.innerHTML = record["Top Technologies"];
+          tr.appendChild(tdTopTechnologies);
+
+          const tdJobTitlesExample = document.createElement("td");
+          tdJobTitlesExample.className = "job-title-example";
+          tdJobTitlesExample.innerHTML = record["Job Titles Example"];
+          tr.appendChild(tdJobTitlesExample);
+
+          tbody.appendChild(tr);
+        });
+      }
+
+      document
+        .getElementById("displayStatisticsBtn")
+        .addEventListener("click", displayStatistics);
+
+      function closeModal() {
+        document.getElementById("myModal").classList.remove("show");
+      }
+    </script>
+  </body>
+</html>
